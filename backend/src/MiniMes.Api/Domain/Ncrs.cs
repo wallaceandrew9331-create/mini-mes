@@ -78,7 +78,8 @@ public class Ncr
             case Domain.Disposition.Rework:
                 if (WorkOrder is null || WorkOrderOperation is null)
                     throw new DomainException("Rework needs an NCR raised against a work order operation");
-                WorkOrder.AddRework(WorkOrderOperation, $"Rework per {Number}: {notes ?? Description}", now);
+                var what = string.IsNullOrWhiteSpace(notes) ? Description : notes.Trim();
+                WorkOrder.AddRework(WorkOrderOperation, $"Rework per {Number}: {what}", now);
                 break;
             case Domain.Disposition.Scrap:
                 Serial.Scrap();

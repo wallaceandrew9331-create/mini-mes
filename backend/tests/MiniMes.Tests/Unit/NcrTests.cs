@@ -27,6 +27,17 @@ public class NcrTests
     }
 
     [Fact]
+    public void Rework_step_falls_back_to_the_ncr_description_when_notes_are_blank()
+    {
+        var wo = Released();
+        var ncr = Ncr.Raise("NCR-1", wo.Serial, wo, wo.CurrentOperation, "Gasket missing", "QA", T0);
+
+        ncr.ApplyDisposition(Disposition.Rework, "MRB", "  ", T0);
+
+        Assert.Equal("Rework per NCR-1: Gasket missing", wo.CurrentOperation!.Name);
+    }
+
+    [Fact]
     public void Use_as_is_unblocks_the_operation_without_extra_steps()
     {
         var wo = Released();
