@@ -1,0 +1,51 @@
+name: mini-mes
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: mes
+      POSTGRES_USER: mes
+      POSTGRES_PASSWORD: mes
+    ports:
+      - "5433:5432" # 5432 is left free for fleet-telemetry's database
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mes -d mes"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  api:
+    build: ./backend
+    environment:
+      ConnectionStrings__Mes: Host=postgres;Database=mes;Username=mes;Password=mes
+      Kafka__BootstrapServers: ${KAFKA_BOOTSTRAP_SERVERS:-}
+    ports:
+      - "5080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build: ./web
+    ports:
+      - "8081:80"
+    depends_on:
+      - api
+
+  # Optional: `docker compose --profile kafka up` and set KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
+  # to publish station events to the mes.station-events topic.
+  redpanda:
+    profiles: [kafka]
+    image: docker.redpanda.com/redpandadata/redpanda:v24.2.7
+    command:
+      - redpanda start --mode dev-container --smp 1
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19093
+      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19093
+    ports:
+      - "19093:19093"
+
+volumes:
+  pgdata:
